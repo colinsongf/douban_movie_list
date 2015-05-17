@@ -69,24 +69,33 @@ class RHS:
             idenCodeSrc= matchResult.group(1)
 
 
-            pattern2 = re.compile('id=(.*?)&amp',re.S)
-            idenCodeId = re.search(pattern2,idenCodeSrc)
-            idenCodeId = idenCodeId.group(1)
+            # pattern2 = re.compile('id=(.*?)&amp',re.S)
+            # idenCodeId = re.search(pattern2,idenCodeSrc)
+            # idenCodeId = idenCodeId.group(1)
                         
 
-            webbrowser.open_new_tab(idenCodeSrc)
+            # webbrowser.open_new_tab(idenCodeSrc)
             
-            self.post['captcha-id'] = idenCodeId
+            # self.post['captcha-id'] = idenCodeId
 
             
             while True:
-                if self.TryInputIdenCode():
+                if self.TryInputIdenCode(idenCodeSrc):
                     break
         else:
             print "No Image Code Needed"
 
 
-    def TryInputIdenCode(self):
+    def TryInputIdenCode(self,idenCodeSrc):
+
+        pattern2 = re.compile('id=(.*?)&amp',re.S)
+        idenCodeId = re.search(pattern2,idenCodeSrc)
+        idenCodeId = idenCodeId.group(1)
+                        
+
+        webbrowser.open_new_tab(idenCodeSrc)
+            
+        self.post['captcha-id'] = idenCodeId
 
         checkcode = raw_input('Input the Image Code: ')        
         self.post['captcha-solution'] = checkcode
@@ -108,6 +117,12 @@ class RHS:
 
         if isWrongCode:
             print "Wrong Image Code, Please Retype"
+            ICpattern = re.compile('<img id="captcha_image" src="(.*?)"',re.S)
+
+            matchResult = re.search(ICpattern,content)
+            idenCodeSrc= matchResult.group(1)
+
+            return self.TryInputIdenCode(idenCodeSrc)
             return False
         else:
             print "Correct Image Code. Login Successfully"
