@@ -89,7 +89,7 @@ class RHS:
                         
         #Show the image in the web-browser and type in it in the command line manually
         webbrowser.open_new_tab(idenCodeSrc)    
-        checkcode = raw_input('Input the Image Code: ')        
+        checkcode = raw_input('Input the Image Code shown in the webbrowser: ')        
         self.post['captcha-solution'] = checkcode
         self.postdata = urllib.urlencode(self.post)
 
@@ -118,11 +118,8 @@ class RHS:
 
     def getPage(self):
 
-        redheartUrl_part1='http://douban.fm/mine'
-        current_page = '#!type=liked'
         #readheartUrl = redheartUrl_part1+current_page
-        redheartUrl = "http://douban.fm/mine?type=liked#!type=liked"
-        redheartUrl = "http://douban.fm/mine#!type=played"
+        redheartUrl = "http://douban.fm/mine#!type=liked&start=15"
 
         movieUrl = "http://movie.douban.com/mine"
 
@@ -151,8 +148,14 @@ class RHS:
 
             break
        
- 
- 
-sdu = RHS(email="uare@sina.com",password="8271152")
-sdu.getPage()
+if __name__ == '__main__':
+
+    #Provide your email and password for Douban.com
+    # user_email=raw_input("Input Your Email: ")
+    user_email = 
+    # user_password=raw_input("Input Your Password: ")
+    user_password = 
+
+    sdu = RHS(email=user_email,password=user_password)
+    sdu.getPage()
 
