@@ -8,6 +8,62 @@ import cookielib
 import re
 import webbrowser
 import mechanize
+from bs4 import BeautifulSoup
+
+
+class OneMovie:
+    def __init__(self,movieitem):
+        self.movie = movieitem
+        self.title = self.getTitle()
+
+    def getTitle(self):
+        title = self.movie.select(".info .title a em")[0].string.encode('utf-8')
+        return title.split("/")
+    def getChineseTitle(self):
+        return self.title[0]
+    def getEnglishTitle(self):
+        if len(self.title)==2:
+            return self.title[1]
+        else:
+            return "N/A"
+
+    def getUrl(self):
+        return self.movie.select(".info .title a")[0].get("href")
+    def getDebut(self):
+        various_info = self.movie.select(".info .intro")[0].string.encode('utf-8')
+        return various_info.split('/')[0]
+
+    def getMatchedDate(self):
+        return self.movie.select(".info .date")[0].string
+    def getComment(self):
+        comment = self.movie.select(".info .comment")
+        if comment:
+            return comment[0].string.encode('utf-8')
+        else:
+            return "N/A"
+
+
+
+class MoviePage:
+    def __init__(self,page):
+        self.soup = BeautifulSoup(page)
+        self.hasNextPage=True
+        self.nextPage=self.getNext()
+        
+
+    def getNext(self):
+        #To see if has next page
+        nextLink = self.soup.select(".paginator .next link")
+        if nextLink:
+            return nextLink[0].get("href")
+        else:
+            self.hasNextPage = False
+            return False
+
+    def getMovies(self):
+        #Return Movies
+        for item in self.soup.select(".grid-view .item"):
+            yield OneMovie(item)
  
 
 class RHS:
@@ -43,9 +99,6 @@ class RHS:
         self.cookie = cookielib.LWPCookieJar()
         self.cookieHandler = urllib2.HTTPCookieProcessor(self.cookie)
         self.opener = urllib2.build_opener(self.cookieHandler,self.proxy,urllib2.HTTPHandler)
-
-        # self.newCookie = cookielib.CookieJar()
-        # self.newOpener = urllib2.build_opener(urllib2.HTTPCookieProcessor(self.newCookie))
 
 
         #Login with Image Code
@@ -117,73 +170,40 @@ class RHS:
             print "Correct Image Code. Login Successfully"
             return True
 
-    def getPage(self):
+    def getMovieInfo(self):
+        starting_url =  "http://movie.douban.com/people/51431818/collect"
 
-        br = mechanize.Browser()
-        br.set_cookiejar(self.cookie)
+        intended_page = starting_url
+        f = open("movie_info.txt",'w')
+        
+        while True:
+            #Crawl the Current Page and construct a MoviePage object                  
+            crawlled_page = self.opener.open(intended_page).read()
+            moviePage = MoviePage(crawlled_page)
+            
 
-        br.set_handle_equiv(True)
-        br.set_handle_gzip(True)
-        br.set_handle_redirect(True)
-        br.set_handle_referer(True)
-        br.set_handle_robots(False)
+            for (i,movie) in enumerate(moviePage.getMovies()):
+                if i == 1:
+                    f.write(movie.getChineseTitle()+"\n")
 
+            if moviePage.hasNextPage:
+                intended_page = moviePage.nextPage
+            else:
+                break
 
-
-
-        #readheartUrl = redheartUrl_part1+current_page
-        redheartUrl = "http://douban.fm/mine#!type=liked&start=15"
-
-        movieUrl = "http://movie.douban.com/people/51431818/collect"
-
-        headers = {
-            'User-Agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36',
-            'Host':'douban.fm',
-            'Connection' : 'Keep-Alive',
-            'Referer':'http://douban.fm/mine'
-
-        }
+        f.close()
 
         
-        response = br.open("http://douban.fm/mine#!type=liked")
 
-        for link in br.links(text_regex='不再播放51首'):
-            print link
-
-        req=br.click_link(text_regex='不再播放51首')
-
-        print req
-        response = br.open(req)
-
-
-        with open("mech_result.html",'w') as mf:
-            mf.write(response.read())
-
-        while True:
-            # request = urllib2.Request(redheartUrl,headers = headers)          
-            result = self.opener.open(redheartUrl)
-            # request = urllib2.Request(redheartUrl,headers = headers)
-            # result = self.newOpener.open(request)
-            with open("songlist.html",'w') as rf:
-
-                rf.write(result.read())
-
-            moviePage = self.opener.open(movieUrl)
-
-            with open("movielist.html","w") as mf:
-                mf.write(moviePage.read())
-
-
-            break
        
 if __name__ == '__main__':
 
     #Provide your email and password for Douban.com
     # user_email=raw_input("Input Your Email: ")
-    user_email = "uare@sina.com"
+    user_email = 
     # user_password=raw_input("Input Your Password: ")
-    user_password = "8271152"
+    user_password = 
 
     sdu = RHS(email=user_email,password=user_password)
-    sdu.getPage()
+    sdu.getMovieInfo()
 
