@@ -7,6 +7,7 @@ import urllib2
 import cookielib
 import re
 import webbrowser
+import mechanize
  
 
 class RHS:
@@ -118,10 +119,22 @@ class RHS:
 
     def getPage(self):
 
+        br = mechanize.Browser()
+        br.set_cookiejar(self.cookie)
+
+        br.set_handle_equiv(True)
+        br.set_handle_gzip(True)
+        br.set_handle_redirect(True)
+        br.set_handle_referer(True)
+        br.set_handle_robots(False)
+
+
+
+
         #readheartUrl = redheartUrl_part1+current_page
         redheartUrl = "http://douban.fm/mine#!type=liked&start=15"
 
-        movieUrl = "http://movie.douban.com/mine"
+        movieUrl = "http://movie.douban.com/people/51431818/collect"
 
         headers = {
             'User-Agent' : 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36',
@@ -130,6 +143,21 @@ class RHS:
             'Referer':'http://douban.fm/mine'
 
         }
+
+        
+        response = br.open("http://douban.fm/mine#!type=liked")
+
+        for link in br.links(text_regex='不再播放51首'):
+            print link
+
+        req=br.click_link(text_regex='不再播放51首')
+
+        print req
+        response = br.open(req)
+
+
+        with open("mech_result.html",'w') as mf:
+            mf.write(response.read())
 
         while True:
             # request = urllib2.Request(redheartUrl,headers = headers)          
@@ -152,9 +180,9 @@ if __name__ == '__main__':
 
     #Provide your email and password for Douban.com
     # user_email=raw_input("Input Your Email: ")
-    user_email = 
+    user_email = "uare@sina.com"
     # user_password=raw_input("Input Your Password: ")
-    user_password = 
+    user_password = "8271152"
 
     sdu = RHS(email=user_email,password=user_password)
     sdu.getPage()
