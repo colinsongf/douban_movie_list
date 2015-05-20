@@ -9,6 +9,9 @@ import re
 import webbrowser
 import mechanize
 from bs4 import BeautifulSoup
+import MySQLdb as mdb
+import sys
+
 
 
 class OneMovie:
@@ -33,7 +36,7 @@ class OneMovie:
         various_info = self.movie.select(".info .intro")[0].string.encode('utf-8')
         return various_info.split('/')[0]
 
-    def getMatchedDate(self):
+    def getWatchedDate(self):
         return self.movie.select(".info .date")[0].string
     def getComment(self):
         comment = self.movie.select(".info .comment")
@@ -66,7 +69,7 @@ class MoviePage:
             yield OneMovie(item)
  
 
-class RHS:
+class DoubanMovies:
  
     def __init__(self,email,password):
         self.loginUrl = "https://www.douban.com/accounts/login"
@@ -103,6 +106,8 @@ class RHS:
 
         #Login with Image Code
         self.loginWithIdenCode()
+
+        self.movie_storage = movieStorage()
 
     def loginWithIdenCode(self):
 
@@ -177,33 +182,93 @@ class RHS:
         f = open("movie_info.txt",'w')
         
         while True:
-            #Crawl the Current Page and construct a MoviePage object                  
+            #Crawl the Current Page and construct a MoviePage object
+            print("Crawling data from "+intended_page)                  
             crawlled_page = self.opener.open(intended_page).read()
             moviePage = MoviePage(crawlled_page)
             
 
+            print("Inserting Data into database....")
             for (i,movie) in enumerate(moviePage.getMovies()):
-                if i == 1:
-                    f.write(movie.getChineseTitle()+"\n")
+
+                self.movie_storage.insert_info(movie.getChineseTitle(),
+                    movie.getEnglishTitle(),
+                    movie.getUrl(),
+                    movie.getDebut(),
+                    movie.getWatchedDate(),
+                    movie.getComment())
+
 
             if moviePage.hasNextPage:
                 intended_page = moviePage.nextPage
             else:
                 break
 
-        f.close()
+        print("Data crawling completed.")
 
         
+        self.movie_storage.commit()
 
+    def show_storage(self):
+        self.movie_storage.show_storage()
+
+    def done(self):
+        self.movie_storage.close()
+
+
+        
+class movieStorage:
+    def __init__(self):
+        try:
+            self.con = mdb.connect(host='localhost', user='root', passwd='1260', db='douban',charset='utf8')
+            self.cur = self.con.cursor()
+
+            self.cur.execute("DROP TABLE IF EXISTS movie_info")
+            self.cur.execute('create table movie_info (id INT primary key AUTO_INCREMENT, \
+                chineseTitle varchar(50),\
+                englishTitle varchar(50),\
+                url varchar(50),\
+                debut varchar(50),\
+                watchedDate varchar(20),\
+                comment varchar(1000)\
+                )')
+
+            print("Datebase Created.")
+        except mdb.Error, e:
+            print(e)
+
+            sys.exit(1)
+
+    def insert_info(self,chineseTitle,englishTitle,url,debut,watchedDate,comment):
+        #Insert movie information into database
+        self.cur.execute('insert into movie_info (chineseTitle,englishTitle,url,debut,watchedDate,comment) \
+            values (%s, %s, %s, %s, %s, %s)', [chineseTitle, englishTitle, url, debut, watchedDate, comment])
+
+
+
+    def show_storage(self):
+        #Show all the content in the database
+        self.cur.execute("select * from movie_info")
+        rows = self.cur.fetchall()
+
+        for row in rows:
+            print row
+
+    def commit(self):
+        self.con.commit()
+    def close(self):
+        self.cur.close()
+        self.con.close()
+        print("Database closed.")
        
 if __name__ == '__main__':
 
     #Provide your email and password for Douban.com
-    # user_email=raw_input("Input Your Email: ")
-    user_email = 
-    # user_password=raw_input("Input Your Password: ")
-    user_password = 
+    user_email=raw_input("Input Your Email: ")
+    user_password=raw_input("Input Your Password: ")
 
-    sdu = RHS(email=user_email,password=user_password)
-    sdu.getMovieInfo()
+    dm = DoubanMovies(email=user_email,password=user_password)
+    dm.getMovieInfo()
+    # dm.show_storage()
+    dm.done()
 
