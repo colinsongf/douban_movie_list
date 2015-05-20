@@ -13,9 +13,9 @@ After all, this project is just for fun and practicing, which will not ensure th
 
 
 # Functions
-This project can do things:
+This project can do four things:
 
-* Establish authenticated a crawler with identifying code.
+* Establish an authenticated crawler with identifying code.
 * Crawl movies from the personal page of douban.
-* Extract movie information from downloaded pages.
+* Extract movie relevant information from downloaded pages.
 * Store the extracted information to local database.
